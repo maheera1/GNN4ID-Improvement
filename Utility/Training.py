@@ -1,3 +1,4 @@
+import time
 import seaborn as sns
 import torch
 from tqdm import tqdm
@@ -191,3 +192,44 @@ def test_cm_with_edge_att(loader,model, device=DEFAULT_DEVICE):
     calculate_metrics(all_preds, all_labels)
 
     return correct / num_graphs, all_preds, all_labels
+
+    
+
+############################################################################################################################
+# IMPROVEMENT 1: inference-latency measurement
+############################################################################################################################
+
+def measure_latency(model, loader, device=DEFAULT_DEVICE, max_batches=300, warmup=5):
+    """
+    Measures the average inference latency of the model in milliseconds PER GRAPH.
+    Only the model forward pass is timed (data loading and host-to-GPU transfer are excluded).
+
+    Args:
+        model (torch.nn.Module): The model to be timed.
+        loader (DataLoader): DataLoader providing the graphs to run inference on.
+        device (str): 'cuda' or 'cpu'.
+        max_batches (int): Maximum number of timed batches.
+        warmup (int): Number of initial batches ignored (GPU / cache warm-up).
+
+    Returns:
+        float: Average latency in ms per graph.
+    """
+    model.eval()
+    use_cuda = str(device).startswith('cuda')
+    total_time, total_graphs = 0.0, 0
+    with torch.no_grad():
+        for i, batch in enumerate(loader):
+            if i >= max_batches + warmup:
+                break
+            batch = batch.to(device)
+            if use_cuda:
+                torch.cuda.synchronize()
+            t0 = time.perf_counter()
+            model(batch.x_dict, batch.edge_index_dict, batch)
+            if use_cuda:
+                torch.cuda.synchronize()
+            dt = time.perf_counter() - t0
+            if i >= warmup:
+                total_time += dt
+                total_graphs += batch.num_graphs
+    return 1000.0 * total_time / total_graphs
