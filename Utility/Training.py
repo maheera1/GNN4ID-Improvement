@@ -6,8 +6,11 @@ import seaborn as sns
 from sklearn.metrics import confusion_matrix, f1_score,accuracy_score, precision_score, recall_score, roc_auc_score
 import numpy as np
 
+# FIX: pick GPU if available, otherwise CPU (fixes the CUDA-only default)
+DEFAULT_DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-def train(train_loader, model, args, device="cuda"):
+
+def train(train_loader, model, args, device=DEFAULT_DEVICE):
     """
     Trains the model using the provided DataLoader, optimizer, and learning rate scheduler.
 
@@ -15,7 +18,7 @@ def train(train_loader, model, args, device="cuda"):
         model (torch.nn.Module): The model to be trained.
         train_loader (DataLoader): DataLoader for the training data.
         args (dict): Dictionary containing training arguments like learning rate and epochs.
-        device (str): The device to run the training on (default is "cuda").
+        device (str): The device to run the training on (default is GPU if available, else CPU).
 
     Returns:
         None
@@ -46,14 +49,14 @@ def train(train_loader, model, args, device="cuda"):
         log = "Epoch {}: Train: {:.4f}, Loss: {:.4f}, Lr: {:.6f}"
         print(log.format(epoch + 1, train_acc, total_loss,current_lr))
 
-def test(loader, model, device='cuda'):
+def test(loader, model, device=DEFAULT_DEVICE):
     """
     Evaluates the model on the provided DataLoader and calculates accuracy.
 
     Args:
         model (torch.nn.Module): The model to be evaluated.
         loader (DataLoader): DataLoader for the evaluation data.
-        device (str): The device to run the evaluation on (default is "cuda").
+        device (str): The device to run the evaluation on (default is GPU if available, else CPU).
 
     Returns:
         float: The accuracy of the model on the provided data.
@@ -72,14 +75,14 @@ def test(loader, model, device='cuda'):
     return correct / num_graphs
     
  
-def test_cm(loader,model, device='cuda'):
+def test_cm(loader,model, device=DEFAULT_DEVICE):
     """
     Evaluates the model on the provided DataLoader, calculates accuracy, and generates predictions and labels.
 
     Args:
         model (torch.nn.Module): The model to be evaluated.
         loader (DataLoader): DataLoader for the evaluation data.
-        device (str): The device to run the evaluation on (default is "cuda").
+        device (str): The device to run the evaluation on (default is GPU if available, else CPU).
 
     Returns:
         tuple: The accuracy of the model, predicted labels, and true labels.
@@ -123,7 +126,7 @@ def calculate_metrics(y_pred, y_true):
     
  ############################################################################################################################
  
-def train_with_edge_Att(train_loader,model, args, device="cuda"):
+def train_with_edge_Att(train_loader,model, args, device=DEFAULT_DEVICE):
     optimizer = torch.optim.Adam(model.parameters(), lr=args['lr']) #weight_decay=5e-4)
     ## Dynamic LR
     # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=5, threshold=0.01, min_lr=0.00001)
@@ -151,7 +154,7 @@ def train_with_edge_Att(train_loader,model, args, device="cuda"):
         log = "Epoch {}: Train: {:.4f}, Loss: {:.4f}, Lr: {:.6f}"
         print(log.format(epoch + 1, train_acc, total_loss,current_lr))
 
-def test_edge(loader,model, device='cuda'):
+def test_edge(loader,model, device=DEFAULT_DEVICE):
     model.eval()
     correct = 0
     num_graphs = 0
@@ -166,7 +169,7 @@ def test_edge(loader,model, device='cuda'):
     return correct / num_graphs
     
  
-def test_cm_with_edge_att(loader,model, device='cuda'):
+def test_cm_with_edge_att(loader,model, device=DEFAULT_DEVICE):
     model.eval()
     correct = 0
     num_graphs = 0
@@ -188,4 +191,3 @@ def test_cm_with_edge_att(loader,model, device='cuda'):
     calculate_metrics(all_preds, all_labels)
 
     return correct / num_graphs, all_preds, all_labels
-

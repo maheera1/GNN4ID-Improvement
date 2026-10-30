@@ -341,10 +341,10 @@ class NIDSDataset(Dataset):
         """ _ Equivalent to __getitem__ in pytorch"""
         if self.test:
             data = torch.load(os.path.join(self.processed_dir, 
-                                 f'data_test_{idx}.pt'))
+                     f'data_test_{idx}.pt'), weights_only=False)
         else:
             data = torch.load(os.path.join(self.processed_dir, 
-                                 f'data_{idx}.pt'))   
+                                 f'data_{idx}.pt'), weights_only=False)   
         return data
         
         
