@@ -233,3 +233,27 @@ def measure_latency(model, loader, device=DEFAULT_DEVICE, max_batches=300, warmu
                 total_time += dt
                 total_graphs += batch.num_graphs
     return 1000.0 * total_time / total_graphs
+
+    
+
+############################################################################################################################
+# IMPROVEMENT 3 (response engine): predictions together with the model's confidence
+############################################################################################################################
+
+def predict_with_confidence(loader, model, device=DEFAULT_DEVICE):
+    """
+    Returns (predicted_class, confidence, true_label) as numpy arrays, one entry per graph.
+    The model outputs log-probabilities, so exp() turns them back into probabilities;
+    the confidence is the probability of the predicted class.
+    """
+    model.eval()
+    preds, confs, labels = [], [], []
+    with torch.no_grad():
+        for batch in tqdm(loader):
+            batch = batch.to(device)
+            out = model(batch.x_dict, batch.edge_index_dict, batch)
+            conf, pred = out.exp().max(dim=1)
+            preds.append(pred.cpu().numpy())
+            confs.append(conf.cpu().numpy())
+            labels.append(batch.y.cpu().numpy())
+    return np.concatenate(preds), np.concatenate(confs), np.concatenate(labels)
